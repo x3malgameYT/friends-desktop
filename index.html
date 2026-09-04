@@ -1087,7 +1087,7 @@ async function startApp(io) {
     text.className = "message-text";
     text.textContent = data.text || "";
 
-    message.append(name, text);
+    message.append(name,text);message.dataset.messageId=data.id;if(data.senderId===socket?.id||data.username===username){const remove=document.createElement('button');remove.textContent='Удалить';remove.className='delete-message';remove.onclick=()=>{socket?.emit('delete-message',{id:data.id});message.remove()};message.append(remove)}
     if(data.file && typeof data.file.name==='string') {
       const card=document.createElement('div');card.style.cssText='padding:12px;background:#232428;border-radius:10px;margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
       const title=document.createElement('span');title.textContent='📎 '+data.file.name+' · '+(Number(data.file.size)/1024/1024).toFixed(2)+' МБ';title.style.overflowWrap='anywhere';
@@ -1487,8 +1487,8 @@ async function startApp(io) {
       });
     }
 
-    message.dataset.messageId = data.id;
-    if (data.senderId === socket?.id || data.username === username) {
+    // message controls are created in showMessage
+    if (false) {
       const remove = document.createElement('button');
       remove.textContent = 'Удалить';
       remove.className = 'delete-message'; remove.style.marginTop = '6px';
