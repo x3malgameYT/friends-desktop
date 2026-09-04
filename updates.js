@@ -1,8 +1,8 @@
 const { autoUpdater } = require('electron-updater');
 
 module.exports = function setupUpdates({app, BrowserWindow, ipcMain, trusted}) {
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowDowngrade = false;
   let state = {status:'idle', version:app.getVersion()};
   let busy = false;
@@ -17,7 +17,7 @@ module.exports = function setupUpdates({app, BrowserWindow, ipcMain, trusted}) {
   autoUpdater.on('update-not-available', () => report('current'));
   autoUpdater.on('download-progress', info => report('downloading', {percent:Math.round(info.percent)}));
   autoUpdater.on('update-downloaded', info => report('ready', {nextVersion:info.version}));
-  autoUpdater.on('error', () => {busy=false;report('error');});
+  autoUpdater.on('error', () => {busy=false;report('error');});if(app.isPackaged)setTimeout(()=>autoUpdater.checkForUpdates().catch(()=>{}),4000);
   ipcMain.handle('updates:state', event => {trusted(event);return state;});
   ipcMain.handle('updates:check', async event => {
     trusted(event);
