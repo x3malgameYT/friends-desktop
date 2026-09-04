@@ -48,7 +48,7 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://github.com/x3malgameYT/friends-downloads/releases/latest/download/"
+        "url": "https://github.com/x3malgameYT/friends-desktop/releases/latest/download/"
       }
     ]
   }
