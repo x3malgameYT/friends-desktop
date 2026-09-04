@@ -1,0 +1,55 @@
+{
+  "name": "friends-desktop",
+  "productName": "Friends",
+  "version": "1.1.24",
+  "description": "Friends messenger",
+  "author": "Friends",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9",
+    "socket.io-client": "4.8.3"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.friends.messenger",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "package.json",
+      "node_modules/**/*",
+      "updates.js",
+      "notifications.js"
+    ],
+    "directories": {
+      "output": "../../outputs/windows"
+    },
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "Friends-Setup-${version}-${arch}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/x3malgameYT/friends-downloads/releases/latest/download/"
+      }
+    ]
+  }
+}

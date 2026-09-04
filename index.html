@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Friends</title>
+
+  <style>
+    .person {display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13px;min-width:0;}
+    .person-picture {width:32px;height:32px;border-radius:50%;object-fit:cover;background:#5865f2;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle;transition:box-shadow .12s ease;}
+    .person-picture.speaking {box-shadow:0 0 0 3px #35d07f,0 0 10px #35d07f;}
+    .video-action {background:#5865f2;color:#fff;border:0;border-radius:8px;padding:10px 12px;transition:filter .15s ease,transform .15s ease;}
+    .video-action:hover:not(:disabled) {filter:brightness(1.12);transform:translateY(-1px);}
+    .delete-message {background:#5865f2;color:#fff;border:0;border-radius:6px;padding:5px 10px;cursor:pointer;}
+    .gallery-action {background:#5865f2;color:#fff;border:0;border-radius:8px;padding:10px 12px;cursor:pointer;}
+    .save-sticker {background:#5865f2;color:#fff;border:0;border-radius:6px;padding:5px 9px;margin:6px 5px 0 0;cursor:pointer;font-size:12px;}
+    .person-name {overflow-wrap:anywhere;min-width:0;}
+    .voice-member {padding:8px;background:#292b30;border-radius:8px;margin:6px 0;}
+    .voice-member input {width:100%;}
+    button, .channel, .server, input, select {
+      transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .15s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    button:not(:disabled):hover { filter:brightness(1.12); box-shadow:0 3px 10px #0003; }
+    button:not(:disabled):active, .channel:active { transform:scale(.97); }
+    button:focus-visible, .channel:focus-visible { outline:2px solid #99a2ff; outline-offset:2px; }
+    @keyframes messageIn { from {opacity:0;transform:translateY(5px)} to {opacity:1;transform:translateY(0)} }
+    .message { animation:messageIn .18s ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition:none!important; animation:none!important; }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #1e1f22;
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    .servers {
+      width: 72px;
+      flex-shrink: 0;
+      background: #111214;
+      padding: 10px;
+    }
+
+    .server {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      background: #5865f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      background: #2b2d31;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .server-name {
+      height: 50px;
+      padding: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #1e1f22;
+    }
+
+    .channels {
+      padding: 12px;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .setting-label {
+      display: block;
+      font-size: 12px;
+      color: #b5bac1;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+
+    .settings-input,
+    .voice-box select {
+      width: 100%;
+      padding: 9px;
+      background: #383a40;
+      border: 1px solid #4e5058;
+      border-radius: 6px;
+      color: white;
+      outline: none;
+    }
+
+    .settings-input:focus {
+      border-color: #5865f2;
+    }
+
+    #connectButton {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      background: #5865f2;
+      border: none;
+      border-radius: 6px;
+      color: white;
+    }
+
+    .channel-title {
+      color: #949ba4;
+      font-size: 12px;
+      margin-bottom: 8px;
+      margin-top: 18px;
+    }
+
+    .channel {
+      padding: 9px;
+      border-radius: 6px;
+      color: #b5bac1;
+      cursor: pointer;
+      margin-bottom: 3px;
+    }
+
+    .channel:hover {
+      background: #35373c;
+      color: white;
+    }
+
+    .voice-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: #232428;
+      border-radius: 8px;
+    }
+
+    .voice-status {
+      color: #949ba4;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .voice-buttons {
+      margin-top: 10px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .voice-buttons button {
+      border: none;
+      border-radius: 6px;
+      padding: 9px;
+      color: white;
+    }
+
+    .join {
+      background: #23a559;
+    }
+
+    .mute,
+    .deafen {
+      background: #4e5058;
+    }
+
+    .monitor {
+      background: #5865f2;
+    }
+
+    .leave {
+      background: #da373c;
+    }
+
+    .user-panel {
+      min-height: 55px;
+      background: #232428;
+      display: flex;
+      align-items: center;
+      padding: 8px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #23a559;
+      margin-right: 8px;
+    }
+
+    #connectionLabel {
+      font-size: 12px;
+      color: #949ba4;
+      margin-top: 3px;
+    }
+
+    .chat {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: #313338;
+    }
+
+    .chat-header {
+      height: 50px;
+      padding: 15px;
+      border-bottom: 1px solid #26272b;
+      font-weight: bold;
+    }
+
+    .messages {
+      flex: 1;
+      min-height: 0;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .message {
+      margin-bottom: 16px;
+    }
+
+    .message-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .message-text {
+      color: #dbdee1;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .message-image {
+      display: block;
+      max-width: 100%;
+      max-height: 360px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .input-area {
+      padding: 15px;
+    }
+
+    #chatStatus {
+      font-size: 13px;
+      padding-bottom: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    #photoButton {
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #5865f2;
+      color: white;
+    }
+
+    .photo-hint {
+      font-size: 12px;
+      color: #b5bac1;
+      margin-bottom: 8px;
+    }
+
+    #messageInput {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      background: #383a40;
+      color: white;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <div class="servers">
+    <div class="server">F</div>
+  </div>
+
+  <div class="sidebar">
+    <div class="server-name">Friends Server</div>
+    <div style="padding:10px 12px;background:#232428">
+      <button id="updateButton" style="width:100%;padding:8px;border:0;border-radius:6px;background:#5865f2;color:white">Проверить обновления</button>
+      <div id="updateStatus" role="status" style="font-size:12px;color:#b5bac1;margin-top:6px"></div>
+    </div>
+
+    <div class="channels">
+      <label class="setting-label" for="serverAddress">
+        Адрес сервера
+      </label>
+      <input
+        id="serverAddress"
+        class="settings-input"
+        value="https://friends-messenger-9w0p.onrender.com"
+        spellcheck="false"
+      >
+
+      <label class="setting-label" for="displayName">
+        Твой ник
+      </label>
+      <input
+        id="displayName"
+        class="settings-input"
+        maxlength="32"
+        value="Sidor"
+      >
+
+      <label class="setting-label" for="accessKey">
+        Код доступа
+      </label>
+      <input
+        id="accessKey"
+        class="settings-input"
+        type="password"
+        autocomplete="off"
+      >
+
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:#b5bac1">
+        <input id="rememberCode" type="checkbox">
+        Запомнить код на этом компьютере
+      </label>
+      <div id="rememberStatus" role="status" style="font-size:12px;color:#b5bac1;margin-top:6px"></div>
+      <button id="connectButton">
+        Подключиться к серверу
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <span id="myAvatar"></span>
+        <button id="avatarButton" style="padding:7px">Выбрать аватарку</button>
+      </div>
+      <input id="avatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <button id="removeAvatar" style="margin-top:6px;padding:5px">Убрать аватарку</button>
+
+      <div class="channel-title">
+        ТЕКСТОВЫЕ КАНАЛЫ
+      </div>
+      <details style="margin:12px 0;color:#b5bac1;font-size:13px">
+        <summary style="cursor:pointer">Звуки и уведомления</summary>
+        <label style="display:block;margin-top:10px"><input id="soundsEnabled" type="checkbox"> Звуки сообщений и войса</label>
+        <label style="display:block;margin-top:10px"><input id="noticesEnabled" type="checkbox"> Уведомления Windows</label>
+        <label class="setting-label" for="soundVolume">Громкость уведомлений</label>
+        <input id="soundVolume" type="range" min="0" max="100" style="width:100%">
+        <div style="font-size:12px;margin-top:5px">Уведомления появляются, когда окно Friends не активно.</div>
+      </details>
+
+      <div class="channel"># general</div>
+
+      <div class="channel-title">
+        ГОЛОСОВЫЕ КАНАЛЫ
+      </div>
+
+      <div class="channel" id="voiceChannel">
+        🔊 Общий
+      </div>
+      <div id="voiceMembers"></div>
+      <div id="videoGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0"></div>
+
+      <div class="voice-box">
+        <div id="voiceStatus" class="voice-status">
+          Не подключено
+        </div>
+
+        <label class="setting-label" for="microphoneSelect">
+          Микрофон
+        </label>
+
+        <select id="microphoneSelect">
+          <option value="">По умолчанию</option>
+        </select>
+
+        <label class="setting-label" for="cameraSelect">
+          Камера
+        </label>
+
+        <select id="cameraSelect">
+          <option value="">По умолчанию</option>
+        </select>
+
+        <label class="setting-label" for="outputSelect">
+          Наушники / колонки
+        </label>
+
+        <select id="outputSelect">
+          <option value="">По умолчанию</option>
+        </select>
+
+        <div class="voice-buttons">
+          <button id="joinVoice" class="join">
+            Подключиться
+          </button>
+
+          <button id="muteVoice" class="mute" disabled>
+            🎙 Выключить микрофон
+          </button>
+
+          <button id="deafenVoice" class="deafen" disabled>
+            🎧 Выключить звук
+          </button>
+
+          <button id="monitorVoice" class="monitor" disabled>
+            🎤 Слушать себя
+          </button>
+          <button id="cameraVoice" class="video-action" disabled>📹 Камера</button>
+          <button id="screenVoice" class="video-action" disabled>🖥 Демонстрация</button>
+          <select id="screenSourceSelect" aria-label="Источник демонстрации"><option value="">Выбрать экран или окно</option></select>
+
+          <button id="leaveVoice" class="leave" disabled>
+            Выйти
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="user-panel">
+      <div class="avatar"></div>
+      <div>
+        <b id="currentName">Sidor</b>
+        <div id="connectionLabel">Не подключено</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-header"># general</div>
+    <details style="padding:8px 20px;border-bottom:1px solid #444">
+      <summary id="membersTitle" style="cursor:pointer">Участники</summary>
+      <div id="chatMembers" style="display:flex;flex-wrap:wrap;gap:16px;max-height:140px;overflow:auto"></div>
+    </details>
+
+    <div class="messages" id="messages">
+      <div class="message">
+        <div class="message-name">System</div>
+        <div class="message-text">
+          Добро пожаловать в Friends 👋
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div id="chatStatus" role="status">
+        Введи код доступа и нажми «Подключиться к серверу»
+      </div>
+
+      <button id="photoButton">📷 Отправить фото</button>
+      <button id="gifButton" class="gallery-action">Отправить GIF</button>
+      <button id="stickerButton" class="gallery-action">Отправить стикер</button>
+      <button id="savedStickerButton" class="gallery-action">Мой стикерпак</button>
+      <input id="gifInput" type="file" accept="image/gif" hidden>
+      <input id="stickerInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <button id="attachmentButton" style="padding:10px;border-radius:8px;background:#5865f2;color:white">📎 Отправить файл</button>
+      <input id="attachmentInput" type="file" hidden>
+
+      <input
+        id="photoInput"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+      >
+
+      <div class="photo-hint">
+        Фото · до 5 МБ. Файлы · до 10 МБ
+      </div>
+
+      <input
+        id="messageInput"
+        maxlength="2000"
+        placeholder="Написать сообщение и нажать Enter..."
+      >
+    </div>
+  </div>
+</div>
+
+<script src="node_modules/socket.io-client/dist/socket.io.min.js"></script>
+
+<script>
+"use strict";
+if (window.friendsUpdates) {
+  const updateButton = document.getElementById('updateButton');
+  const updateStatus = document.getElementById('updateStatus');
+  let updateState = {status:'idle'};
+  function displayUpdate(state) {
+    updateState = state;
+    updateButton.disabled = ['checking','downloading'].includes(state.status);
+    updateButton.textContent = state.status === 'available' ? 'Скачать обновление'
+      : state.status === 'ready' ? 'Установить и перезапустить' : 'Проверить обновления';
+    const labels = {
+      idle:'Версия ' + state.version,
+      checking:'Проверяю обновления…',
+      available:'Доступна версия ' + state.nextVersion,
+      current:'Установлена последняя версия: ' + state.version,
+      downloading:'Скачиваю: ' + (state.percent || 0) + '%',
+      ready:'Обновление готово. Перезапуск прервёт голосовой звонок.',
+      error:'Не удалось проверить или скачать обновление. Попробуй позже.',
+      development:'Обновления доступны в установленном приложении.'
+    };
+    updateStatus.textContent = labels[state.status] || '';
+  }
+  window.friendsUpdates.subscribe(displayUpdate);
+  window.friendsUpdates.state().then(displayUpdate);
+  updateButton.onclick = async () => {
+    updateButton.disabled = true;
+    try {
+      if(updateState.status === 'ready') await window.friendsUpdates.install();
+      else if(updateState.status === 'available') await window.friendsUpdates.download();
+      else await window.friendsUpdates.check();
+    } catch {displayUpdate({status:'error'});}
+  };
+} else {
+  document.getElementById('updateButton').hidden = true;
+}
+
+// Поддержка старого main.js, где включён Node.js.
+const socketFactory =
+  typeof window.io === "function"
+    ? window.io
+    : typeof require === "function"
+      ? require("socket.io-client").io
+      : null;
+
+if (!socketFactory) {
+  document.getElementById("chatStatus").textContent =
+    "Не найдена библиотека Socket.IO. Открой CMD в папке проекта, " +
+    "выполни npm install socket.io-client и затем npm start.";
+} else {
+  startApp(socketFactory);
+}
+
+async function startApp(io) {
+  const DEFAULT_SERVER =
+    "https://friends-messenger-9w0p.onrender.com";
+
+  const $ = id => document.getElementById(id);
+
+  const serverAddress = $("serverAddress");
+  const displayName = $("displayName");
+  const accessKeyInput = $("accessKey");
+  const rememberCode = $("rememberCode");
+  const rememberStatus = $("rememberStatus");
+  const connectButton = $("connectButton");
+  const currentName = $("currentName");
+  const connectionLabel = $("connectionLabel");
+
+  const input = $("messageInput");
+  const messages = $("messages");
+  const chatStatus = $("chatStatus");
+  const photoButton = $("photoButton");
+  const fileInput = $("photoInput");
+
+  const voiceChannel = $("voiceChannel");
+  const voiceStatus = $("voiceStatus");
+  const microphoneSelect = $("microphoneSelect");
+  const cameraSelect = $("cameraSelect");
+  const outputSelect = $("outputSelect");
+
+  const joinVoiceButton = $("joinVoice");
+  const muteVoiceButton = $("muteVoice");
+  const deafenVoiceButton = $("deafenVoice");
+  const monitorVoiceButton = $("monitorVoice");
+  const leaveVoiceButton = $("leaveVoice");
+  const cameraVoiceButton = $("cameraVoice");
+  const screenVoiceButton = $("screenVoice");
+  const screenSourceSelect = $("screenSourceSelect");
+  const videoGrid = $("videoGrid");
+  async function loadScreenSources() {
+    try {
+      const sources = await window.friendsScreen?.sources?.() || [];
+      screenSourceSelect.replaceChildren(new Option('Выбрать экран или окно',''));
+      sources.forEach(source => screenSourceSelect.append(new Option((source.type==='screen'?'🖥 ':'▣ ')+source.name, source.id)));
+    } catch {}
+  }
+  screenSourceSelect.onchange = () => window.friendsScreen?.select?.(screenSourceSelect.value || null);
+  loadScreenSources();
+
+  function readStorage(storage, name, fallback) {
+    try {
+      return storage.getItem(name) || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem("friends-server", serverUrl);
+      localStorage.setItem("friends-name", username);
+      sessionStorage.setItem("friends-key", accessKey);
+    } catch (error) {
+      console.warn("Не удалось сохранить настройки:", error);
+    }
+  }
+
+  let serverUrl = readStorage(
+    localStorage,
+    "friends-server",
+    DEFAULT_SERVER
+  );
+
+  let username = readStorage(
+    localStorage,
+    "friends-name",
+    "Sidor"
+  );
+
+  let accessKey = readStorage(
+    sessionStorage,
+    "friends-key",
+    ""
+  );
+
+  let socket = null;
+  let uploading = false;
+
+  let localStream = null;
+  let videoStream = null;
+  let videoKind = '';
+  let monitorAudio = null;
+  let muted = false;
+  let deafened = false;
+  let monitoring = false;
+  let joining = false;
+  let voiceSession = 0;
+
+  const peers = new Map();
+  const pendingIce = new Map();
+  const seen = new Set();
+  const soundsEnabled = $('soundsEnabled');
+  const noticesEnabled = $('noticesEnabled');
+  const soundVolume = $('soundVolume');
+  soundsEnabled.checked = readStorage(localStorage,'friends-sounds','on') === 'on';
+  noticesEnabled.checked = readStorage(localStorage,'friends-notices','on') === 'on';
+  soundVolume.value = readStorage(localStorage,'friends-volume','45');
+  soundsEnabled.onchange = () => localStorage.setItem('friends-sounds',soundsEnabled.checked?'on':'off');
+  noticesEnabled.onchange = () => localStorage.setItem('friends-notices',noticesEnabled.checked?'on':'off');
+  soundVolume.oninput = () => localStorage.setItem('friends-volume',soundVolume.value);
+  let audioContext;
+  let lastSound = 0;
+  function unlockSound() {
+    audioContext ||= new AudioContext();
+    if(audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+  }
+  document.addEventListener('pointerdown',unlockSound,{passive:true});
+  document.addEventListener('keydown',unlockSound);
+  async function playSound(kind) {
+    if(!soundsEnabled.checked || Number(soundVolume.value) === 0) return;
+    if(kind === 'message' && Date.now()-lastSound < 1000) return;
+    lastSound = Date.now();
+    try {
+      unlockSound();
+      await audioContext.resume();
+      const notes = kind === 'join' ? [520,780] : kind === 'leave' ? [650,390] : [740,980];
+      const start = audioContext.currentTime;
+      notes.forEach((frequency,index) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const time = start + index*.12;
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0,time);
+        gain.gain.linearRampToValueAtTime(Number(soundVolume.value)/100*.15,time+.015);
+        gain.gain.exponentialRampToValueAtTime(.001,time+.16);
+        oscillator.connect(gain);gain.connect(audioContext.destination);
+        oscillator.start(time);oscillator.stop(time+.18);
+        oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+      });
+    } catch(error) {console.warn('Звук уведомления недоступен',error);}
+  }
+
+  const VOICE_ROOM = "general-voice";
+  let participants = new Map();
+  const memberVolumes = new Map();
+  const speaking = new Set();
+  const voiceAnalysers = new Map();
+  let speakingTimer = null;
+  let uploadToken = '';
+  let rtcServers = [{urls:'stun:stun.l.google.com:19302'}];
+  let turnConfigured = false;
+  let myAvatar = readStorage(localStorage,'friends-avatar:'+serverUrl,'');
+  function picture(value,label) {
+    const fallback=document.createElement('span');fallback.className='person-picture';fallback.textContent=(label || '?').slice(0,1).toUpperCase();
+    if(!value)return fallback;
+    try {
+      const url=new URL(value,serverUrl);
+      if(url.protocol!=='https:' && !(url.protocol==='http:' && url.origin===serverUrl)) return fallback;
+      const img=document.createElement('img');img.className='person-picture';img.src=url.href;img.alt=label || 'Аватарка';img.onerror=()=>img.replaceWith(fallback);return img;
+    } catch {return fallback;}
+  }
+  function drawMe() { const avatarEl=picture(myAvatar,username); if(speaking.has(socket?.id)) avatarEl.classList.add('speaking'); $('myAvatar').replaceChildren(avatarEl); }
+  function drawMembers() {
+    $('chatMembers').replaceChildren();$('voiceMembers').replaceChildren();
+    $('membersTitle').textContent='Участники — '+participants.size;
+    for(const member of participants.values()) {
+      const row=document.createElement('div');row.className='person';
+      const label=document.createElement('span');label.className='person-name';label.textContent=member.username+(member.id===socket?.id?' (ты)':'')+(member.voice?' 🔊':'');
+      const avatarEl=picture(member.avatar,member.username); if(speaking.has(member.id)) avatarEl.classList.add('speaking');
+      row.append(avatarEl,label);$('chatMembers').append(row);
+      if(member.voice) {
+        const box=document.createElement('div');box.className='voice-member';box.append(row.cloneNode(true));
+        if(member.id!==socket?.id) {
+          const volume=document.createElement('input');volume.type='range';volume.min=0;volume.max=100;volume.value=String(memberVolumes.get(member.id) ?? 100);
+          volume.setAttribute('aria-label','Громкость '+member.username);
+          const caption=document.createElement('div');caption.style.fontSize='12px';caption.textContent='Громкость: '+volume.value+'%';
+          volume.oninput=()=>{const v=Number(volume.value);memberVolumes.set(member.id,v);const audio=$('remote-'+member.id);if(audio)audio.volume=v/100;caption.textContent='Громкость: '+v+'%';};
+          box.append(caption,volume);
+        }
+        $('voiceMembers').append(box);
+      }
+    }
+  }
+  function watchSpeaking(peerId, stream) {
+    if(!stream || voiceAnalysers.has(peerId)) return;
+    try {
+      const context = audioContext || new AudioContext(); audioContext=context;
+      const analyser=context.createAnalyser(); analyser.fftSize=256;
+      context.createMediaStreamSource(stream).connect(analyser);
+      voiceAnalysers.set(peerId,{analyser,data:new Uint8Array(analyser.fftSize)});
+      if(!speakingTimer) speakingTimer=setInterval(()=>{
+        for(const [id,item] of voiceAnalysers){item.analyser.getByteTimeDomainData(item.data);let sum=0;for(const value of item.data){const n=(value-128)/128;sum+=n*n;}const active=Math.sqrt(sum/item.data.length)>.045;if(active!==speaking.has(id)){if(active)speaking.add(id);else speaking.delete(id);drawMembers();drawMe();}}
+      },120);
+    } catch(error) { console.warn('Индикатор речи недоступен',error); }
+  }
+  $('avatarButton').onclick=()=>{
+    if(uploading)return;
+    if(!socket?.connected || !uploadToken){setStatus('Сначала подключись к серверу');return;}
+    $('avatarInput').click();
+  };
+  $('avatarInput').onchange=async()=>{
+    if(uploading)return;
+    const file=$('avatarInput').files[0];if(!file)return;
+    if(file.size>5*1024*1024){setStatus('Аватарка должна быть до 5 МБ');$('avatarInput').value='';return;}
+    const targetSocket=socket,targetServer=serverUrl;
+    $('avatarButton').disabled=true;connectButton.disabled=true;uploading=true;
+    try {
+      const form=new FormData();form.append('image',file);
+      const response=await fetch(targetServer+'/avatar',{method:'POST',headers:{Authorization:'Bearer '+accessKey,'X-Upload-Token':uploadToken},body:form,signal:AbortSignal.timeout(90000)});
+      const result=await response.json();if(!response.ok)throw Error(result.error || 'Ошибка загрузки');
+      myAvatar=result.avatar;localStorage.setItem('friends-avatar:'+targetServer,myAvatar);drawMe();
+      if(socket===targetSocket)socket.auth={...socket.auth,avatar:myAvatar};
+      setStatus('Аватарка сохранена');
+    }catch(error){setStatus('Не удалось загрузить аватарку: '+error.message);}
+    finally{$('avatarInput').value='';$('avatarButton').disabled=false;connectButton.disabled=false;uploading=false;}
+  };
+  $('removeAvatar').onclick=()=>{
+    myAvatar='';localStorage.removeItem('friends-avatar:'+serverUrl);drawMe();
+    if(socket){socket.auth={...socket.auth,avatar:''};if(socket.connected)socket.emit('profile-update',{username,avatar:''});}
+  };
+  drawMe();
+
+  serverAddress.value = serverUrl;
+  displayName.value = username;
+  accessKeyInput.value = accessKey;
+  currentName.textContent = username;
+
+  function setStatus(text) {
+    chatStatus.textContent = text;
+  }
+
+  function validServer(value) {
+    const url = new URL(value.trim());
+
+    const localHttp =
+      url.protocol === "http:" &&
+      ["localhost", "127.0.0.1"].includes(url.hostname);
+
+    if (url.protocol !== "https:" && !localHttp) {
+      throw new Error(
+        "Укажи HTTPS-адрес сервера или http://localhost:3000"
+      );
+    }
+
+    if (url.username || url.password) {
+      throw new Error("В адресе сервера не должно быть пароля.");
+    }
+
+    return url.origin;
+  }
+
+  // Подключение создаётся заново при нажатии кнопки.
+  // Перезагрузка окна не требуется.
+  function connectToServer() {
+    if (uploading) {
+      setStatus("Дождись окончания загрузки фото.");
+      return;
+    }
+
+    let nextUrl;
+
+    try {
+      nextUrl = validServer(serverAddress.value);
+    } catch (error) {
+      setStatus(error.message);
+      return;
+    }
+
+    leaveVoice();
+
+    if (socket) {
+      socket.removeAllListeners();
+      socket.disconnect();
+    }
+
+    serverUrl = nextUrl;
+    myAvatar = readStorage(localStorage,'friends-avatar:'+serverUrl,'');
+    uploadToken='';participants.clear();drawMembers();
+    username = displayName.value.trim().slice(0, 32) || "Друг";
+    accessKey = accessKeyInput.value;
+
+    saveSettings();
+
+    serverAddress.value = serverUrl;
+    currentName.textContent = username;
+    drawMe();
+    connectionLabel.textContent = "Подключение…";
+
+    messages.replaceChildren();
+    seen.clear();
+
+    setStatus("Подключаюсь к " + serverUrl + "…");
+
+    socket = io(serverUrl, {
+      auth: { key: accessKey, username, avatar:myAvatar },
+      autoConnect: false,
+      forceNew: true,
+      transports: ["websocket", "polling"],
+      tryAllTransports: true,
+      timeout: 60000,
+      reconnection: true,
+      reconnectionDelay: 1500,
+      reconnectionDelayMax: 5000
+    });
+
+    bindSocket(socket);
+    socket.connect();
+  }
+
+  connectButton.onclick = connectToServer;
+
+  accessKeyInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      connectToServer();
+    }
+  });
+
+  function bindSocket(client) {
+    client.on('session-info', info=>{
+      uploadToken=info.uploadToken;
+      if(Array.isArray(info.iceServers))rtcServers=info.iceServers;
+      turnConfigured=Boolean(info.turnConfigured);
+    });
+    client.on('participants', list=>{
+      if(!Array.isArray(list))return;
+      participants=new Map(list.map(person=>[person.id,person]));
+      for(const id of memberVolumes.keys())if(!participants.has(id))memberVolumes.delete(id);
+      drawMembers();
+    });
+    client.on("connect", () => {
+      connectionLabel.textContent = "В сети";
+      setStatus("Подключено к серверу");
+      if (rememberCode.checked && window.savedAccess) {
+        window.savedAccess.save({server:serverUrl,key:accessKey})
+          .then(() => { rememberStatus.textContent = 'Код сохранён на этом компьютере'; })
+          .catch(() => { rememberStatus.textContent = 'Не удалось сохранить код. При следующем запуске введи его снова.'; });
+      }
+    });
+
+    client.on("connect_error", error => {
+      connectionLabel.textContent = "Не подключено";
+
+      if (error.message.includes("код доступа")) {
+        setStatus(
+          "Неверный код доступа. Введи значение CHAT_KEY " +
+          "из Render и нажми «Подключиться к серверу»."
+        );
+      } else {
+        setStatus(
+          "Нет связи с " + serverUrl + ": " + error.message +
+          ". Сервер после сна может запускаться около минуты."
+        );
+      }
+    });
+
+    client.on("disconnect", () => {
+      uploadToken='';participants.clear();drawMembers();
+      leaveVoice();
+      connectionLabel.textContent = "Не подключено";
+      setStatus("Связь потеряна. Пробую подключиться снова…");
+    });
+
+    client.on("chat-message", data => {
+      const fresh = data && !seen.has(data.id);
+      showMessage(data);
+      const own = data?.senderId ? data.senderId === client.id : data?.username === username;
+      if(fresh && !own) {
+        playSound('message');
+        if(noticesEnabled.checked) window.friendsNotify?.message({name:String(data.username || 'Друг'),text:data.file?'📎 '+String(data.file.name):data.image?'📷 Фото':String(data.text || '')}).catch(()=>{});
+      }
+    });
+    client.on('message-deleted', ({id}) => document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`)?.remove());
+
+    client.on("chat-history", rows => {
+      if (Array.isArray(rows)) {
+        rows.forEach(showMessage);
+      }
+    });
+
+    client.on("voice-peers", async peerIds => {
+      if (!localStream || !Array.isArray(peerIds)) return;
+
+      const session = voiceSession;
+
+      try {
+        for (const peerId of peerIds) {
+          if (session !== voiceSession || !localStream) return;
+
+          const peer = createPeer(peerId);
+          const offer = await peer.createOffer();
+
+          if (session !== voiceSession) return;
+
+          await peer.setLocalDescription(offer);
+
+          if (session !== voiceSession) return;
+
+          client.emit("voice-offer", {
+            target: peerId,
+            offer
+          });
+        }
+      } catch (error) {
+        reportVoiceError(error);
+      }
+    });
+
+    client.on("voice-offer", async ({ from, offer }) => {
+      if (!localStream) return;
+      if(!peers.has(from)) playSound('join');
+
+      const session = voiceSession;
+
+      try {
+        const peer = peers.get(from) || createPeer(from);
+
+        await peer.setRemoteDescription(offer);
+        await flushIce(from);
+
+        if (session !== voiceSession) return;
+
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+
+        if (session !== voiceSession) return;
+
+        client.emit("voice-answer", {
+          target: from,
+          answer
+        });
+      } catch (error) {
+        reportVoiceError(error);
+      }
+    });
+
+    client.on("voice-answer", async ({ from, answer }) => {
+      const peer = peers.get(from);
+      if (!peer || !localStream) return;
+
+      try {
+        await peer.setRemoteDescription(answer);
+        await flushIce(from);
+      } catch (error) {
+        reportVoiceError(error);
+      }
+    });
+
+    client.on("ice-candidate", async ({ from, candidate }) => {
+      if (!localStream || !candidate) return;
+
+      const peer = peers.get(from);
+
+      if (!peer || !peer.remoteDescription) {
+        const queue = pendingIce.get(from) || [];
+
+        if (queue.length < 100) {
+          queue.push(candidate);
+        }
+
+        pendingIce.set(from, queue);
+        return;
+      }
+
+      try {
+        await peer.addIceCandidate(candidate);
+      } catch (error) {
+        console.warn("Ошибка ICE:", error);
+      }
+    });
+
+    client.on("voice-user-left", ({ id }) => {
+      if(peers.has(id) && localStream) playSound('leave');
+      removePeer(id);
+    });
+  }
+
+  // =========================
+  // ТЕКСТОВЫЕ СООБЩЕНИЯ
+  // =========================
+
+  input.addEventListener("keydown", event => {
+    if (event.key !== "Enter" || event.isComposing) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!socket || !socket.connected) {
+      setStatus("Сначала подключись к серверу.");
+      return;
+    }
+
+    const sendingSocket = socket;
+    input.disabled = true;
+
+    sendingSocket.timeout(10000).emit(
+      "chat-message",
+      { username, text },
+      (error, result) => {
+        input.disabled = false;
+
+        if (sendingSocket !== socket) return;
+
+        if (error || !result?.ok) {
+          setStatus(
+            result?.error ||
+            "Нет подтверждения отправки. " +
+            "Проверь чат перед повторной отправкой."
+          );
+          return;
+        }
+
+        input.value = "";
+        input.focus();
+      }
+    );
+  });
+
+  function showMessage(data) {
+    if (!data || typeof data.id !== "string") return;
+    if (seen.has(data.id)) return;
+
+    seen.add(data.id);
+
+    const message = document.createElement("div");
+    message.className = "message";
+
+    const name = document.createElement("div");
+    name.className = "message-name";
+    name.textContent = data.username || "Друг";
+    name.prepend(picture(data.avatar,data.username),document.createTextNode(' '));
+
+    const text = document.createElement("div");
+    text.className = "message-text";
+    text.textContent = data.text || "";
+
+    message.append(name, text);
+    if(data.file && typeof data.file.name==='string') {
+      const card=document.createElement('div');card.style.cssText='padding:12px;background:#232428;border-radius:10px;margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+      const title=document.createElement('span');title.textContent='📎 '+data.file.name+' · '+(Number(data.file.size)/1024/1024).toFixed(2)+' МБ';title.style.overflowWrap='anywhere';
+      const button=document.createElement('button');button.textContent='Скачать';
+      const origin=serverUrl;
+      button.onclick=async()=>{
+        button.disabled=true;
+        try {
+          if(origin!==serverUrl)throw Error('Подключись к серверу этого сообщения');
+          if(!/^\/files\/[a-f0-9-]{36}\.[a-z0-9]{1,12}$/.test(data.file.url))throw Error('Неверная ссылка на файл');
+          const response=await fetch(origin+data.file.url,{headers:{Authorization:'Bearer '+accessKey},signal:AbortSignal.timeout(90000)});
+          if(!response.ok)throw Error(response.status===401?'Проверь код доступа':'Файл пока недоступен. Попробуй позже');
+          const bytes=new Uint8Array(await response.arrayBuffer());
+          if(bytes.length>10*1024*1024)throw Error('Файл превышает 10 МБ');
+          if(!window.friendsFiles)throw Error('Для сохранения открой файл в приложении Friends');
+          const result=await window.friendsFiles.save({name:data.file.name,bytes});
+          setStatus(result.saved?'Файл сохранён':'Сохранение отменено');
+        } catch(error){setStatus(error.name==='TimeoutError'?'Сервер долго отвечает. Попробуй ещё раз':error.message);}
+        finally{button.disabled=false;}
+      };
+      card.append(title,button);message.append(card);
+    }
+
+    if (data.image) {
+      try {
+        const url = new URL(data.image, serverUrl);
+
+        const allowed =
+          url.protocol === "https:" ||
+          (
+            url.protocol === "http:" &&
+            url.origin === new URL(serverUrl).origin
+          );
+
+        if (allowed) {
+          const img = document.createElement("img");
+
+          img.className = "message-image";
+          img.src = url.href;
+          img.alt = "Фото от " + (data.username || "друга");
+          img.loading = "lazy";
+
+          img.onload = () => {
+            messages.scrollTop = messages.scrollHeight;
+          };
+
+          img.onerror = () => {
+            img.replaceWith(
+              document.createTextNode(
+                "Не удалось загрузить изображение."
+              )
+            );
+          };
+
+          message.append(img);
+          const saved = JSON.parse(localStorage.getItem('friends-saved-stickers') || '[]');
+          const saveButton = document.createElement('button'); saveButton.className='save-sticker'; saveButton.textContent='Сохранить';
+          saveButton.onclick=()=>{if(!saved.some(item=>item.url===url.href)){saved.push({url:url.href,name:data.username||'Стикер'});localStorage.setItem('friends-saved-stickers',JSON.stringify(saved));}saveButton.textContent='Сохранено';};
+          const packButton = document.createElement('button'); packButton.className='save-sticker'; packButton.textContent='В стикерпак';
+          packButton.onclick=()=>{const pack=JSON.parse(localStorage.getItem('friends-sticker-pack') || '[]');if(!pack.some(item=>item.url===url.href)){pack.push({url:url.href,name:data.username||'Стикер'});localStorage.setItem('friends-sticker-pack',JSON.stringify(pack));}packButton.textContent='В паке';};
+          message.append(saveButton,packButton);
+        }
+      } catch (error) {
+        console.warn("Неверная ссылка на изображение:", error);
+      }
+    }
+
+    messages.append(message);
+
+    while (messages.children.length > 200) {
+      messages.firstElementChild.remove();
+    }
+
+    if (seen.size > 1000) {
+      seen.delete(seen.values().next().value);
+    }
+
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  // =========================
+  // ЗАГРУЗКА ФОТО
+  // =========================
+
+  photoButton.onclick = () => {
+    if(uploading)return;
+    if (!socket || !socket.connected) {
+      setStatus("Сначала подключись к серверу.");
+      return;
+    }
+
+    fileInput.click();
+  };
+
+  async function sendGalleryImage(inputId, label) {
+    if (uploading) return;
+    if (!socket?.connected || !uploadToken) { setStatus('Сначала подключись к серверу'); return; }
+    const input = $(inputId), file = input.files[0];
+    if (!file) return;
+    if (!file.size || file.size > 5 * 1024 * 1024) { setStatus('Картинка должна быть до 5 МБ'); input.value=''; return; }
+    uploading = true; setStatus('Загружаю ' + label + '…');
+    try {
+      const form = new FormData(); form.append('image', file);
+      const response = await fetch(serverUrl + '/upload', {method:'POST', headers:{Authorization:'Bearer '+accessKey,'X-Upload-Token':uploadToken}, body:form, signal:AbortSignal.timeout(90000)});
+      const result = await response.json(); if (!response.ok) throw Error(result.error || 'Не удалось отправить картинку');
+      showMessage(result.message); setStatus(label + ' отправлен');
+    } catch (error) { setStatus(error.message); }
+    finally { uploading=false; input.value=''; }
+  }
+  $('gifButton').onclick = () => { if (!uploading) $('gifInput').click(); };
+  $('stickerButton').onclick = () => { if (!uploading) $('stickerInput').click(); };
+  $('gifInput').onchange = () => sendGalleryImage('gifInput','GIF');
+  $('stickerInput').onchange = () => sendGalleryImage('stickerInput','Стикер');
+  $('savedStickerButton').onclick = () => {
+    const pack = JSON.parse(localStorage.getItem('friends-sticker-pack') || '[]');
+    const saved = JSON.parse(localStorage.getItem('friends-saved-stickers') || '[]');
+    const all = [...pack, ...saved.filter(item=>!pack.some(p=>p.url===item.url))];
+    if (!all.length) return setStatus('Стикерпак пока пуст');
+    const overlay=document.createElement('div'); overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#111d;display:flex;align-items:center;justify-content:center;padding:30px';
+    const box=document.createElement('div'); box.style.cssText='background:#2f3136;padding:18px;border-radius:12px;max-width:700px;max-height:80vh;overflow:auto';
+    const title=document.createElement('h3'); title.textContent='Мой стикерпак'; box.append(title);
+    all.forEach(item=>{const img=document.createElement('img');img.src=item.url;img.style.cssText='width:110px;height:110px;object-fit:contain;margin:6px;background:#222;border-radius:8px';box.append(img);});
+    const close=document.createElement('button'); close.className='gallery-action'; close.textContent='Закрыть'; close.onclick=()=>overlay.remove(); box.append(document.createElement('br'),close); overlay.append(box); overlay.onclick=e=>{if(e.target===overlay)overlay.remove();}; document.body.append(overlay);
+  };
+
+  $('attachmentButton').onclick=()=>{
+    if(uploading)return;
+    if(!socket?.connected || !uploadToken){setStatus('Сначала подключись к серверу');return;}
+    $('attachmentInput').click();
+  };
+  $('attachmentInput').onchange=async()=>{
+    if(uploading)return;
+    const file=$('attachmentInput').files[0];if(!file)return;
+    if(!socket?.connected || !uploadToken){setStatus('Сначала подключись к серверу');return;}
+    if(!file.size || file.size>10*1024*1024){setStatus('Выбери непустой файл до 10 МБ');$('attachmentInput').value='';return;}
+    uploading=true;connectButton.disabled=true;$('attachmentButton').disabled=true;
+    setStatus('Загружаю файл…');
+    try {
+      const form=new FormData();form.append('file',file);form.append('filename',file.name);
+      const response=await fetch(serverUrl+'/upload-file',{method:'POST',headers:{Authorization:'Bearer '+accessKey,'X-Upload-Token':uploadToken},body:form,signal:AbortSignal.timeout(90000)});
+      const result=await response.json();
+      if(!response.ok)throw Error(result.error || 'Не удалось отправить файл');
+      showMessage(result.message);setStatus('Файл отправлен');
+    } catch(error){setStatus(error.name==='TimeoutError'?'Нет подтверждения отправки. Проверь чат перед повтором':error.message);}
+    finally{uploading=false;connectButton.disabled=false;$('attachmentButton').disabled=false;$('attachmentInput').value='';}
+  };
+
+  fileInput.onchange = async () => {
+    if(uploading)return;
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (!socket || !socket.connected) {
+      setStatus("Сначала подключись к серверу.");
+      fileInput.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus("Фото должно быть размером до 5 МБ.");
+      fileInput.value = "";
+      return;
+    }
+
+    uploading = true;
+    photoButton.disabled = true;
+    connectButton.disabled = true;
+
+    setStatus("Загружаю фото…");
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90000);
+
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      form.append("username", username);
+
+      const response = await fetch(serverUrl + "/upload", {
+        method: "POST",
+        headers: {
+          'X-Upload-Token': uploadToken,
+          Authorization: "Bearer " + accessKey
+        },
+        body: form,
+        signal: controller.signal
+      });
+
+      let result;
+
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error(
+          "Сервер пока не готов или вернул неожиданный ответ."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Не удалось загрузить фото."
+        );
+      }
+
+      showMessage(result.message);
+      setStatus("Фото отправлено");
+    } catch (error) {
+      const message =
+        error.name === "AbortError"
+          ? "Сервер слишком долго отвечал."
+          : error.message;
+
+      setStatus(
+        message + " Проверь чат перед повторной отправкой."
+      );
+    } finally {
+      clearTimeout(timer);
+      uploading = false;
+      photoButton.disabled = false;
+      connectButton.disabled = false;
+      fileInput.value = "";
+    }
+  };
+
+  // =========================
+  // АУДИОУСТРОЙСТВА
+  // =========================
+
+  async function loadDevices() {
+    try {
+      const devices =
+        await navigator.mediaDevices.enumerateDevices();
+
+      fillDeviceSelect(
+        microphoneSelect,
+        devices.filter(device => device.kind === "audioinput"),
+        "Микрофон"
+      );
+
+      fillDeviceSelect(
+        cameraSelect,
+        devices.filter(device => device.kind === "videoinput"),
+        "Камера"
+      );
+
+      fillDeviceSelect(
+        outputSelect,
+        devices.filter(device => device.kind === "audiooutput"),
+        "Устройство"
+      );
+    } catch (error) {
+      console.warn("Не удалось загрузить устройства:", error);
+    }
+  }
+
+  function fillDeviceSelect(select, devices, prefix) {
+    const previous = select.value;
+
+    select.replaceChildren(
+      new Option("По умолчанию", "")
+    );
+
+    devices.forEach((device, index) => {
+      if (!device.deviceId) return;
+
+      select.append(
+        new Option(
+          device.label || prefix + " " + (index + 1),
+          device.deviceId
+        )
+      );
+    });
+
+    if ([...select.options].some(option => option.value === previous)) {
+      select.value = previous;
+    }
+  }
+
+  async function getMicrophoneStream() {
+    const deviceId = microphoneSelect.value;
+
+    return navigator.mediaDevices.getUserMedia({
+      audio: {
+        ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
+      video: false
+    });
+  }
+
+  async function setOutputDevice(audio) {
+    if (!audio || typeof audio.setSinkId !== "function") return;
+
+    try {
+      await audio.setSinkId(outputSelect.value || "");
+    } catch (error) {
+      console.warn("Не удалось сменить вывод звука:", error);
+    }
+  }
+
+  outputSelect.onchange = async () => {
+    const audios = document.querySelectorAll(
+      'audio[id^="remote-"]'
+    );
+
+    for (const audio of audios) {
+      await setOutputDevice(audio);
+    }
+
+    if (monitorAudio) {
+      await setOutputDevice(monitorAudio);
+    }
+  };
+
+  microphoneSelect.onchange = async () => {
+    if (!localStream) return;
+
+    const session = voiceSession;
+    let nextStream = null;
+
+    try {
+      nextStream = await getMicrophoneStream();
+
+      if (session !== voiceSession || !localStream) {
+        nextStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
+      const oldStream = localStream;
+      const newTrack = nextStream.getAudioTracks()[0];
+
+      newTrack.enabled = !muted;
+
+      const replacements = [];
+
+      for (const peer of peers.values()) {
+        const sender = peer.getSenders().find(
+          item => item.track && item.track.kind === "audio"
+        );
+
+        if (sender) {
+          replacements.push(sender.replaceTrack(newTrack));
+        }
+      }
+
+      await Promise.all(replacements);
+
+      if (session !== voiceSession) {
+        nextStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
+      localStream = nextStream;
+      oldStream.getTracks().forEach(track => track.stop());
+
+      if (monitoring) {
+        await startMonitor();
+      }
+    } catch (error) {
+      if (nextStream && nextStream !== localStream) {
+        nextStream.getTracks().forEach(track => track.stop());
+      }
+
+      console.error(error);
+      leaveVoice();
+      voiceStatus.textContent =
+        "Не удалось сменить микрофон. Подключись к войсу снова.";
+    }
+  };
+
+  // =========================
+  // ГОЛОСОВОЕ СОЕДИНЕНИЕ
+  // =========================
+
+  function reportVoiceError(error) {
+    console.error("Ошибка войса:", error);
+
+    if (localStream) {
+      voiceStatus.textContent =
+        "Не удалось установить голосовую связь.";
+    }
+  }
+
+  function createPeer(peerId) {
+    const existing = peers.get(peerId);
+    if (existing) return existing;
+
+    const peer = new RTCPeerConnection({
+      iceServers: rtcServers
+    });
+
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        peer.addTrack(track, localStream);
+      });
+    }
+
+    message.dataset.messageId = data.id;
+    if (data.senderId === socket?.id || data.username === username) {
+      const remove = document.createElement('button');
+      remove.textContent = 'Удалить';
+      remove.className = 'delete-message'; remove.style.marginTop = '6px';
+      remove.onclick = () => { socket?.emit('delete-message', {id:data.id}); message.remove(); };
+      message.append(remove);
+    }
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => {
+        peer.addTrack(track, videoStream);
+      });
+    }
+
+    peer.ontrack = async event => {
+      if(event.track.kind==='video') {
+        let video=document.getElementById('remote-video-'+peerId);
+        if(!video){video=document.createElement('video');video.id='remote-video-'+peerId;video.autoplay=true;video.playsInline=true;addFullscreenControl(video);videoGrid.append(video);}
+        video.srcObject=event.streams[0]||new MediaStream([event.track]);
+        return;
+      }
+      let audio = document.getElementById("remote-" + peerId);
+
+      if (!audio) {
+        audio = document.createElement("audio");
+        audio.id = "remote-" + peerId;
+        audio.autoplay = true;
+        document.body.append(audio);
+      }
+
+      audio.srcObject =
+        event.streams[0] || new MediaStream([event.track]);
+      watchSpeaking(peerId, audio.srcObject);
+
+      audio.muted = deafened;
+      audio.volume = (memberVolumes.get(peerId) ?? 100)/100;
+
+      await setOutputDevice(audio);
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.warn("Воспроизведение звука заблокировано:", error);
+        const resume = async () => {
+          try { await audio.play(); } catch {}
+          document.removeEventListener('pointerdown', resume);
+          document.removeEventListener('keydown', resume);
+        };
+        document.addEventListener('pointerdown', resume, {once:true});
+        document.addEventListener('keydown', resume, {once:true});
+      }
+    };
+
+    peer.onnegotiationneeded = () => {
+      if (peer.signalingState !== 'stable' || !socket?.connected) return;
+      renegotiate(peer);
+    };
+
+    peer.onicecandidate = event => {
+      if (!event.candidate || !socket?.connected) return;
+
+      socket.emit("ice-candidate", {
+        target: peerId,
+        candidate: event.candidate
+      });
+    };
+
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === "failed") {
+        voiceStatus.textContent = turnConfigured
+          ? 'Нет голосовой связи. Проверь интернет и настройки TURN, затем выйди и подключись снова.'
+          : 'Прямое соединение заблокировано сетью. На сервере пока не настроен TURN для передачи звука. Текстовый чат работает отдельно.';
+      }
+    };
+
+    peers.set(peerId, peer);
+    return peer;
+  }
+
+  let videoOverlay = null;
+  let videoOverlayVideo = null;
+  let videoOverlayParent = null;
+  function closeVideoFullscreen() {
+    if (!videoOverlay || !videoOverlayVideo) return;
+    videoOverlayVideo.style.cssText = videoOverlayVideo.dataset.restoreStyle || '';
+    videoOverlayParent?.append(videoOverlayVideo);
+    videoOverlay.remove();
+    videoOverlay = null; videoOverlayVideo = null; videoOverlayParent = null;
+  }
+  function openVideoFullscreen(video) {
+    if (!video) return;
+    if (videoOverlay) { closeVideoFullscreen(); return; }
+    videoOverlayParent = video.parentElement;
+    videoOverlayVideo = video;
+    videoOverlay = document.createElement('div');
+    videoOverlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+    const close = document.createElement('button');
+    close.textContent='✕ Закрыть полный экран';
+    close.style.cssText='position:absolute;top:18px;right:18px;z-index:2;padding:10px 14px;border:0;border-radius:8px;background:#5865f2;color:#fff;font-size:15px;cursor:pointer';
+    close.onclick=closeVideoFullscreen;
+    videoOverlay.onclick=(event)=>{if(event.target===videoOverlay) closeVideoFullscreen();};
+    video.dataset.restoreStyle = video.style.cssText;
+    video.style.cssText='width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;border-radius:0;background:#000;cursor:zoom-out';
+    videoOverlay.append(video,close); document.body.append(videoOverlay);
+    video.focus?.();
+  }
+  document.addEventListener('keydown', event => { if(event.key==='Escape') closeVideoFullscreen(); });
+  function addFullscreenControl(video) {
+    video.title = 'Нажми для полного экрана';
+    video.style.cssText='width:240px;max-width:100%;border-radius:8px;background:#111;cursor:pointer';
+    let clickTimer = null;
+    video.addEventListener('click', () => {
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => openVideoFullscreen(video), 250);
+    });
+    video.addEventListener('dblclick', () => {
+      clearTimeout(clickTimer);
+      openVideoFullscreen(video);
+    });
+  }
+  async function renegotiate(peer) {
+    if(!peer || !socket?.connected) return;
+    try { const offer=await peer.createOffer(); await peer.setLocalDescription(offer); socket.emit('voice-offer',{target:[...peers.entries()].find(([,p])=>p===peer)?.[0],offer:peer.localDescription}); } catch(error){console.warn('Видео-переговоры:',error);}
+  }
+  async function startVideo(kind) {
+    if(!localStream || videoStream) return;
+    try {
+      const cameraId = cameraSelect.value;
+      videoStream=kind==='screen' ? await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:60,max:120},width:{ideal:3840},height:{ideal:2160}},audio:{echoCancellation:false,noiseSuppression:false}}) : await navigator.mediaDevices.getUserMedia({audio:false,video:{...(cameraId ? {deviceId:{exact:cameraId}} : {}),frameRate:{ideal:60,max:120},width:{ideal:1920},height:{ideal:1080}}});
+      videoStream.getVideoTracks()[0].onended=stopVideo;
+      for(const peer of peers.values()){
+        for(const track of videoStream.getTracks()) peer.addTrack(track,videoStream);
+      }
+      const preview=document.createElement('video');preview.id='local-video';preview.autoplay=true;preview.muted=true;preview.playsInline=true;addFullscreenControl(preview);preview.srcObject=videoStream;videoGrid.append(preview);
+      videoKind=kind;cameraVoiceButton.disabled=false;screenVoiceButton.disabled=false;cameraVoiceButton.textContent=kind==='camera'?'⏹ Выключить камеру':'📹 Камера';screenVoiceButton.textContent=kind==='screen'?'⏹ Выключить экран':'🖥 Экран';voiceStatus.textContent=kind==='screen'?'🟢 Демонстрация экрана включена':'🟢 Камера включена';
+    } catch(error){videoStream=null;setStatus('Не удалось включить видео или демонстрацию экрана.');}
+  }
+  function stopVideo(){
+    if(!videoStream)return;
+    for(const peer of peers.values())for(const sender of peer.getSenders())if(sender.track?.kind==='video')sender.replaceTrack(null).catch(()=>{});
+    videoStream.getTracks().forEach(track=>track.stop());videoStream=null;videoKind='';document.getElementById('local-video')?.remove();document.querySelectorAll('video[id^="remote-video-"]').forEach(v=>v.remove());cameraVoiceButton.disabled=!localStream;screenVoiceButton.disabled=!localStream;cameraVoiceButton.textContent='📹 Камера';screenVoiceButton.textContent='🖥 Экран';
+  }
+
+  async function flushIce(peerId) {
+    const peer = peers.get(peerId);
+    if (!peer || !peer.remoteDescription) return;
+
+    const candidates = pendingIce.get(peerId) || [];
+    pendingIce.delete(peerId);
+
+    for (const candidate of candidates) {
+      try {
+        await peer.addIceCandidate(candidate);
+      } catch (error) {
+        console.warn("Ошибка ICE:", error);
+      }
+    }
+  }
+
+  function removePeer(peerId) {
+    const peer = peers.get(peerId);
+
+    if (peer) {
+      peer.close();
+      peers.delete(peerId);
+    }
+
+    pendingIce.delete(peerId);
+    voiceAnalysers.delete(peerId); speaking.delete(peerId);
+    document.getElementById("remote-" + peerId)?.remove();
+    drawMembers();
+  }
+
+  async function joinVoice() {
+    if (!socket?.connected) {
+      setStatus("Сначала подключись к серверу.");
+      return;
+    }
+
+    if (localStream || joining) return;
+
+    joining = true;
+    joinVoiceButton.disabled = true;
+    voiceStatus.textContent = "Запрашиваю микрофон…";
+
+    const session = ++voiceSession;
+
+    try {
+      const stream = await getMicrophoneStream();
+
+      if (session !== voiceSession || !socket?.connected) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
+      localStream = stream;
+      watchSpeaking(socket?.id || 'self', localStream);
+      muted = false;
+      deafened = false;
+
+      socket.emit("join-voice", VOICE_ROOM);
+      playSound('join');
+
+      voiceStatus.textContent = "🟢 Подключено к «Общий»";
+
+      muteVoiceButton.disabled = false;
+      deafenVoiceButton.disabled = false;
+      monitorVoiceButton.disabled = false;
+      cameraVoiceButton.disabled = false;
+      screenVoiceButton.disabled = false;
+      leaveVoiceButton.disabled = false;
+
+      await loadDevices();
+    } catch (error) {
+      console.error(error);
+
+      if (session === voiceSession) {
+        voiceStatus.textContent =
+          "Нет доступа к микрофону. Проверь разрешения Windows.";
+      }
+    } finally {
+      if (session === voiceSession) {
+        joining = false;
+        joinVoiceButton.disabled = Boolean(localStream);
+      }
+    }
+  }
+
+  joinVoiceButton.onclick = joinVoice;
+  voiceChannel.onclick = joinVoice;
+
+  muteVoiceButton.onclick = () => {
+    if (!localStream) return;
+
+    muted = !muted;
+
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !muted;
+    });
+
+    muteVoiceButton.textContent = muted
+      ? "🔇 Включить микрофон"
+      : "🎙 Выключить микрофон";
+  };
+
+  deafenVoiceButton.onclick = () => {
+    deafened = !deafened;
+
+    document.querySelectorAll('audio[id^="remote-"]').forEach(audio => {
+      audio.muted = deafened;
+    });
+
+    deafenVoiceButton.textContent = deafened
+      ? "🔈 Включить звук"
+      : "🎧 Выключить звук";
+  };
+
+  async function startMonitor() {
+    if (!localStream) return;
+
+    stopMonitor();
+
+    monitorAudio = document.createElement("audio");
+    monitorAudio.autoplay = true;
+    monitorAudio.srcObject = localStream;
+
+    document.body.append(monitorAudio);
+
+    monitoring = true;
+    monitorVoiceButton.textContent = "⏹ Не слушать себя";
+
+    await setOutputDevice(monitorAudio);
+  }
+
+  function stopMonitor() {
+    if (monitorAudio) {
+      monitorAudio.pause();
+      monitorAudio.srcObject = null;
+      monitorAudio.remove();
+      monitorAudio = null;
+    }
+
+    monitoring = false;
+    monitorVoiceButton.textContent = "🎤 Слушать себя";
+  }
+
+  monitorVoiceButton.onclick = async () => {
+    if (!localStream) return;
+
+    if (monitoring) {
+      stopMonitor();
+    } else {
+      await startMonitor();
+    }
+  };
+
+  function leaveVoice() {
+    if(localStream) playSound('leave');
+    voiceSession++;
+    joining = false;
+
+    if (socket?.connected) {
+      socket.emit("leave-voice");
+    }
+
+    for (const peer of peers.values()) {
+      peer.close();
+    }
+
+    peers.clear();
+    pendingIce.clear();
+
+    document.querySelectorAll('audio[id^="remote-"]').forEach(audio => {
+      audio.remove();
+    });
+
+    stopMonitor();
+
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+
+    muted = false;
+    deafened = false;
+
+    voiceStatus.textContent = "Не подключено";
+
+    joinVoiceButton.disabled = false;
+    muteVoiceButton.disabled = true;
+    deafenVoiceButton.disabled = true;
+    monitorVoiceButton.disabled = true;
+    cameraVoiceButton.disabled = true;
+    screenVoiceButton.disabled = true;
+    stopVideo();
+    leaveVoiceButton.disabled = true;
+
+    muteVoiceButton.textContent = "🎙 Выключить микрофон";
+    deafenVoiceButton.textContent = "🎧 Выключить звук";
+  }
+
+  leaveVoiceButton.onclick = leaveVoice;
+  cameraVoiceButton.onclick=()=>videoStream?(videoKind==='camera'?stopVideo():null):startVideo('camera');
+  screenVoiceButton.onclick=()=>videoStream?(videoKind==='screen'?stopVideo():null):startVideo('screen');
+
+  window.addEventListener("beforeunload", () => {
+    leaveVoice();
+    socket?.disconnect();
+  });
+
+  loadDevices();
+
+  rememberCode.disabled = !window.savedAccess;
+  rememberCode.onchange = async () => {
+    try {
+      if (!rememberCode.checked) {
+        await window.savedAccess.clear();
+        sessionStorage.removeItem('friends-key');
+        rememberStatus.textContent = 'Сохранённый код удалён';
+      } else if (socket?.connected && accessKeyInput.value === accessKey) {
+        await window.savedAccess.save({server:serverUrl,key:accessKey});
+        rememberStatus.textContent = 'Код сохранён на этом компьютере';
+      } else {
+        rememberStatus.textContent = 'Код сохранится после успешного подключения';
+      }
+    } catch { rememberStatus.textContent = 'Не удалось изменить сохранение кода. Попробуй снова.'; }
+  };
+  connectButton.disabled = true;
+  rememberCode.disabled = true;
+  if (window.savedAccess) {
+    try {
+      const saved = await window.savedAccess.load();
+      if (saved && saved.server === serverUrl && typeof saved.key === 'string') {
+        accessKey = saved.key;
+        accessKeyInput.value = accessKey;
+        rememberCode.checked = true;
+      }
+    } catch { rememberStatus.textContent = 'Не удалось прочитать сохранённый код. Введи его снова.'; }
+  }
+  connectButton.disabled = false;
+  rememberCode.disabled = !window.savedAccess;
+  if (accessKey) {
+    connectToServer();
+  }
+}
+</script>
+</body>
+</html>
+
