@@ -1148,7 +1148,7 @@ async function startApp(io) {
           saveButton.onclick=()=>{if(!saved.some(item=>item.url===url.href)){saved.push({url:url.href,name:data.username||'Стикер'});localStorage.setItem('friends-saved-stickers',JSON.stringify(saved));}saveButton.textContent='Сохранено';};
           const packButton = document.createElement('button'); packButton.className='save-sticker'; packButton.textContent='В стикерпак';
           packButton.onclick=()=>{const pack=JSON.parse(localStorage.getItem('friends-sticker-pack') || '[]');if(!pack.some(item=>item.url===url.href)){pack.push({url:url.href,name:data.username||'Стикер'});localStorage.setItem('friends-sticker-pack',JSON.stringify(pack));}packButton.textContent='В паке';};
-          message.append(saveButton,packButton);
+          const gifPackButton = document.createElement('button'); gifPackButton.className='save-sticker'; gifPackButton.textContent='В GIF-пак'; gifPackButton.onclick=()=>{const pack=JSON.parse(localStorage.getItem('friends-gif-pack') || '[]');if(!pack.some(item=>item.url===url.href)){pack.push({url:url.href,name:data.username||'GIF'});localStorage.setItem('friends-gif-pack',JSON.stringify(pack));}gifPackButton.textContent='В GIF-паке';}; message.append(saveButton,packButton,gifPackButton);
         }
       } catch (error) {
         console.warn("Неверная ссылка на изображение:", error);
@@ -1202,14 +1202,14 @@ async function startApp(io) {
   $('gifInput').onchange = () => sendGalleryImage('gifInput','GIF');
   $('stickerInput').onchange = () => sendGalleryImage('stickerInput','Стикер');
   $('savedStickerButton').onclick = () => {
-    const pack = JSON.parse(localStorage.getItem('friends-sticker-pack') || '[]');
+    const pack = JSON.parse(localStorage.getItem('friends-sticker-pack') || '[]'); const gifPack = JSON.parse(localStorage.getItem('friends-gif-pack') || '[]');
     const saved = JSON.parse(localStorage.getItem('friends-saved-stickers') || '[]');
-    const all = [...pack, ...saved.filter(item=>!pack.some(p=>p.url===item.url))];
+    const all = [...pack, ...saved.filter(item=>!pack.some(p=>p.url===item.url))]; const gifs = gifPack;
     if (!all.length) return setStatus('Стикерпак пока пуст');
     const overlay=document.createElement('div'); overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#111d;display:flex;align-items:center;justify-content:center;padding:30px';
     const box=document.createElement('div'); box.style.cssText='background:#2f3136;padding:18px;border-radius:12px;max-width:700px;max-height:80vh;overflow:auto';
-    const title=document.createElement('h3'); title.textContent='Мой стикерпак'; box.append(title);
-    all.forEach(item=>{const img=document.createElement('img');img.src=item.url;img.style.cssText='width:110px;height:110px;object-fit:contain;margin:6px;background:#222;border-radius:8px';box.append(img);});
+    const title=document.createElement('h3'); title.textContent='Мои паки'; box.append(title); const gifTab=document.createElement('button'); gifTab.className='gallery-action'; gifTab.textContent='GIF-пак'; gifTab.onclick=()=>{all.splice(0,all.length,...gifs);}; box.append(gifTab);
+    all.forEach(item=>{const wrap=document.createElement('div');wrap.style.cssText='display:inline-flex;flex-direction:column;align-items:center;margin:6px';const img=document.createElement('img');img.src=item.url;img.style.cssText='width:110px;height:110px;object-fit:contain;margin:6px;background:#222;border-radius:8px';const send=document.createElement('button');send.className='save-sticker';send.textContent='Отправить';send.onclick=async()=>{try{const blob=await (await fetch(item.url)).blob();const form=new FormData();form.append('image',blob,'saved.webp');const r=await fetch(serverUrl+'/upload',{method:'POST',headers:{Authorization:'Bearer '+accessKey,'X-Upload-Token':uploadToken},body:form});const x=await r.json();if(!r.ok)throw Error(x.error);showMessage(x.message);setStatus('Отправлено')}catch(e){setStatus(e.message)}};wrap.append(img,send);box.append(wrap);});
     const close=document.createElement('button'); close.className='gallery-action'; close.textContent='Закрыть'; close.onclick=()=>overlay.remove(); box.append(document.createElement('br'),close); overlay.append(box); overlay.onclick=e=>{if(e.target===overlay)overlay.remove();}; document.body.append(overlay);
   };
 
