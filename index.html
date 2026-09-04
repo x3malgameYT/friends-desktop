@@ -1906,3 +1906,6 @@ body{background:#1e1f22;color:#f2f3f5}
 <script>
 (()=>{const box=document.querySelector(".voice-box");if(!box||!navigator.mediaDevices?.getDisplayMedia)return;const row=document.createElement("label");row.style.cssText="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:#b5bac1";const cb=document.createElement("input");cb.type="checkbox";cb.checked=localStorage.getItem("friends-share-audio")==="on";cb.id="shareScreenAudio";const text=document.createElement("span");text.textContent="Передавать звук экрана (может включить звук Friends)";row.append(cb,text);box.append(row);cb.onchange=()=>localStorage.setItem("friends-share-audio",cb.checked?"on":"off");const original=navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getDisplayMedia=opts=>{const next={...(opts||{})};next.audio=cb.checked?(opts?.audio||true):false;return original(next);};})();
 </script>
+<script>
+(()=>{const grid=document.getElementById("videoGrid");if(!grid)return;const resume=()=>document.querySelectorAll("audio[id^=remote-]").forEach(a=>{if(!a.muted)a.play().catch(()=>{});});new MutationObserver(()=>setTimeout(resume,350)).observe(grid,{childList:true,subtree:true});setInterval(resume,1200);})();
+</script>
