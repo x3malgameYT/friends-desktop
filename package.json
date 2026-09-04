@@ -1,7 +1,7 @@
 {
   "name": "friends-desktop",
   "productName": "Friends",
-  "version": "1.1.28",
+  "version": "1.1.29",
   "description": "Friends messenger",
   "author": "Friends",
   "private": true,
@@ -48,8 +48,8 @@
     },
     "publish": [
       {
-        "provider": "generic",
-        "url": "https://github.com/x3malgameYT/friends-desktop/releases/latest/download/"
+        "provider": "github",
+        "owner": "x3malgameYT", "repo": "friends-desktop"
       }
     ]
   }
