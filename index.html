@@ -299,7 +299,7 @@
       color: white;
       font-size: 15px;
     }
-  </style>
+.chat{position:relative}.messages{padding-right:270px}.message{display:grid;grid-template-columns:40px 1fr;gap:0 12px;padding:5px 0 10px;border-radius:6px}.message:hover{background:#2e3035}.message-name,.message-text,.message-image{grid-column:2}.message-name{margin:0}.message .person-picture{grid-row:1/span 3;width:40px;height:40px}.input-area{margin:0 16px 16px;padding:0;background:#383a40;border-radius:8px}.photo-hint{display:none}.chat details{position:absolute;right:0;top:50px;bottom:0;width:250px;padding:20px 12px!important;background:#2b2d31;border:0!important;overflow:auto}.chat details #chatMembers{display:block!important;max-height:none!important;overflow:visible!important}.chat details .person{padding:6px 8px;border-radius:5px}.chat details .person:hover{background:#35373c}@media(max-width:900px){.messages{padding-right:20px}.chat details{display:none}}</style>
 </head>
 
 <body>
@@ -451,7 +451,7 @@
   </div>
 
   <div class="chat">
-    <div class="chat-header"># general</div>
+    <div class="chat-header"># general <input id="messageSearch" class="search-box" placeholder="Поиск сообщений"></div>
     <details style="padding:8px 20px;border-bottom:1px solid #444">
       <summary id="membersTitle" style="cursor:pointer">Участники</summary>
       <div id="chatMembers" style="display:flex;flex-wrap:wrap;gap:16px;max-height:140px;overflow:auto"></div>
@@ -572,7 +572,7 @@ async function startApp(io) {
 
   const input = $("messageInput");
   const messages = $("messages");
-  const chatStatus = $("chatStatus");
+  const chatStatus = $("chatStatus");const messageSearch=$("messageSearch");messageSearch.oninput=()=>{const q=messageSearch.value.trim().toLowerCase();document.querySelectorAll(".message").forEach(m=>m.classList.toggle("search-hit",!!q&&m.innerText.toLowerCase().includes(q)))};
   const photoButton = $("photoButton");
   const fileInput = $("photoInput");
 
