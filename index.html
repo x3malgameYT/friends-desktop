@@ -1925,3 +1925,25 @@ q('friends-group-create').onclick=async()=>{const name=q('friends-group-name').v
 q('friends-group-join').onclick=async()=>{const invite=q('friends-group-code').value.trim();const r=await fetch(API+'/groups/join',{method:'POST',headers:headers(),body:JSON.stringify({invite})});const d=await r.json();status(r.ok?'Ты в группе «'+d.group.name+'»':(d.error||'Код не найден'));loadGroups();};
 async function loadGroups(){const r=await fetch(API+'/groups',{headers:headers()});if(!r.ok)return;const a=await r.json();const el=q('friends-social-items');el.innerHTML=a.map(g=>'<div class="friends-social-item">'+(g.visibility==='private'?'🔒 ':'🌐 ')+g.name+'</div>').join('')||'Групп пока нет';}loadGroups();})();
 </script>
+<!-- Смешивание голоса и звука демонстрации -->
+<script>
+(()=> {
+  const mix = () => document.querySelectorAll('audio[id^="remote-"]').forEach(a => {
+    const incoming = a.srcObject?.getAudioTracks?.() || [];
+    if (!incoming.length) return;
+    const old = a.__friendsTracks || [];
+    const tracks = [...old, ...incoming].filter((tr,i,arr) =>
+      tr.readyState !== 'ended' && arr.findIndex(x => x.id === tr.id) === i
+    );
+    if (tracks.length > 1 && (!old.length || tracks.some(tr => !old.some(o => o.id === tr.id)))) {
+      a.__friendsTracks = tracks;
+      a.srcObject = new MediaStream(tracks);
+      a.play?.().catch(()=>{});
+    } else if (!old.length) {
+      a.__friendsTracks = incoming;
+    }
+  });
+  setInterval(mix, 300);
+  new MutationObserver(mix).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
