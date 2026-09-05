@@ -523,7 +523,7 @@ html body #friends-home-screen{display:flex!important}
     <p id="adminHint" style="color:#b5bac1;font-size:13px">Введи секретный ключ администратора.</p>
     <input id="adminKey" class="settings-input" type="password" placeholder="Секретный ключ" style="width:100%;box-sizing:border-box">
     <button id="adminLogin" style="margin-top:10px">Войти</button>
-    <div id="adminContent" hidden style="margin-top:16px"><div id="adminStats" style="color:#b5bac1;margin-bottom:10px"></div><button id="adminClear" style="background:#da373c">Очистить сообщения</button></div>
+    <div id="adminContent" hidden style="margin-top:16px"><div id="adminStats" style="color:#b5bac1;margin-bottom:10px"></div><textarea id="adminAnnouncement" maxlength="1000" placeholder="Объявление для всех" style="width:100%;box-sizing:border-box;min-height:62px"></textarea><button id="adminAnnounce" style="margin-top:7px">Отправить объявление</button><button id="adminRefresh" style="margin:7px 0 0 7px;background:#4e5058">Обновить список</button><div id="adminUsers" style="margin-top:12px;max-height:220px;overflow:auto"></div><button id="adminClear" style="margin-top:10px;background:#da373c">Очистить сообщения</button></div>
   </div>
 </div>
 <script id="discord-refresh-dom">
@@ -906,9 +906,12 @@ async function startApp(io) {
     socket.emit("admin-auth", adminKey.value, response => {
       if (!response?.ok) return adminHint.textContent = response?.error || "Неверный ключ.";
       adminHint.textContent = "Доступ администратора открыт."; adminContent.hidden = false;
-      socket.emit("admin-dashboard", data => { $("adminStats").textContent = `Сейчас в сети: ${data?.participants || 0}. Сообщений: ${data?.messages || 0}.`; });
+      loadAdminDashboard();
     });
   };
+  function loadAdminDashboard() { socket?.emit("admin-dashboard", data => { if (!data?.ok) return adminHint.textContent = data?.error || "Нет доступа"; $("adminStats").textContent = `Сейчас в сети: ${data.participants || 0}. Сообщений: ${data.messages || 0}.`; $("adminUsers").replaceChildren(...(data.users || []).map(user => { const row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;gap:8px;padding:6px;background:#232428;margin:4px 0;border-radius:5px"; const name=document.createElement("span"); name.style.flex="1"; name.textContent=`${user.voice ? "🔊 " : ""}${user.username}${user.self ? " (ты)" : ""}`; row.append(name); if(!user.self) { const kick=document.createElement("button"); kick.textContent="Отключить"; kick.style.background="#da373c"; kick.onclick=()=>socket.emit("admin-kick",user.id,result=>{adminHint.textContent=result?.ok?"Участник отключён.":(result?.error||"Ошибка");loadAdminDashboard();}); row.append(kick); } return row; })); }); }
+  $("adminRefresh").onclick = loadAdminDashboard;
+  $("adminAnnounce").onclick = () => { socket?.emit("admin-announce", $("adminAnnouncement").value, result => { adminHint.textContent=result?.ok?"Объявление отправлено.":(result?.error||"Ошибка"); if(result?.ok) $("adminAnnouncement").value=""; }); };
   $("adminClear").onclick = () => { socket?.emit("admin-clear-chat", response => { adminHint.textContent = response?.ok ? "Сообщения очищены." : (response?.error || "Не удалось очистить сообщения."); }); };
   function hostKey() {
     const bytes = new Uint8Array(24);
