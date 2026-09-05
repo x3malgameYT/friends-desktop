@@ -366,6 +366,11 @@ html body #friends-home-screen{display:flex!important}
       <button id="connectButton">
         Подключиться к серверу
       </button>
+      <button id="transferHostButton" style="margin-top:8px;background:#3ba55c">
+        Передать хост на мой компьютер
+      </button>
+      <div id="hostTransferStatus" role="status" style="font-size:12px;color:#b5bac1;margin-top:6px"></div>
+      <button id="adminButton" style="margin-top:8px;background:#4e5058">Панель управления</button>
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
         <span id="myAvatar"></span>
         <button id="avatarButton" style="padding:7px">Выбрать аватарку</button>
@@ -512,10 +517,19 @@ html body #friends-home-screen{display:flex!important}
   </div>
 </div>
 
+<div id="legacyAdmin" hidden style="position:fixed;inset:0;z-index:1000;background:#0009;align-items:center;justify-content:center">
+  <div style="width:min(480px,calc(100vw - 32px));background:#313338;border-radius:9px;padding:20px;color:#f2f3f5">
+    <div style="display:flex;align-items:center;justify-content:space-between"><strong style="font-size:20px">Панель управления</strong><button id="adminClose" style="background:transparent;border:0;color:#fff;font-size:22px">×</button></div>
+    <p id="adminHint" style="color:#b5bac1;font-size:13px">Введи секретный ключ администратора.</p>
+    <input id="adminKey" class="settings-input" type="password" placeholder="Секретный ключ" style="width:100%;box-sizing:border-box">
+    <button id="adminLogin" style="margin-top:10px">Войти</button>
+    <div id="adminContent" hidden style="margin-top:16px"><div id="adminStats" style="color:#b5bac1;margin-bottom:10px"></div><button id="adminClear" style="background:#da373c">Очистить сообщения</button></div>
+  </div>
+</div>
 <script id="discord-refresh-dom">
 document.addEventListener("DOMContentLoaded",()=>{const sn=document.querySelector(".server-name");if(sn)sn.textContent="FRIENDS";const ch=document.querySelector(".channels");if(ch&&!ch.querySelector(".connection-settings")){const title=ch.querySelector(".channel-title"),box=document.createElement("details");box.className="connection-settings";const sum=document.createElement("summary");sum.textContent="Настройки профиля и подключения";box.append(sum);while(ch.firstChild&&ch.firstChild!==title)box.append(ch.firstChild);ch.prepend(box)}const h=document.querySelector(".chat-header"),search=document.getElementById("messageSearch");if(h){h.textContent="";h.insertAdjacentHTML("beforeend",'<span class="hash">#</span><span>общий</span><span class="topic">Главный канал сервера</span>');if(search)h.append(search)}const md=document.querySelector(".chat>details");if(md){md.classList.add("members-panel");document.querySelector(".app").append(md)}const m=document.getElementById("messages");if(m&&!m.querySelector(".welcome"))m.insertAdjacentHTML("afterbegin",'<div class="welcome"><div class="welcome-icon">#</div><h1>Добро пожаловать на #общий!</h1><p>Это начало канала #общий.</p></div>');const area=document.querySelector(".input-area");if(area&&!area.querySelector(".composer")){const composer=document.createElement("div");composer.className="composer";const input=document.getElementById("messageInput");area.append(composer);["photoButton","gifButton","stickerButton","savedStickerButton","attachmentButton"].forEach(id=>{const el=document.getElementById(id);if(el)composer.append(el)});if(input){input.placeholder="Написать #общий";composer.append(input)}}const uw=document.getElementById("updateButton")?.parentElement;if(uw)uw.classList.add("update-wrap")});
 </script>
-<script src="friends-v2.js"></script>\n<script src="admin.js"></script>\n<script src="node_modules/socket.io-client/dist/socket.io.min.js"></script>
+<script src="friends-v2.js"></script>\n<script src="node_modules/socket.io-client/dist/socket.io.min.js"></script>
 
 <script>
 "use strict";
@@ -803,11 +817,11 @@ async function startApp(io) {
 
     const localHttp =
       url.protocol === "http:" &&
-      ["localhost", "127.0.0.1"].includes(url.hostname);
+      ["localhost", "127.0.0.1"].includes(url.hostname) || /^26\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(url.hostname);
 
     if (url.protocol !== "https:" && !localHttp) {
       throw new Error(
-        "Укажи HTTPS-адрес сервера или http://localhost:3000"
+        "Укажи HTTPS-адрес сервера или адрес хоста Radmin VPN"
       );
     }
 
@@ -878,6 +892,53 @@ async function startApp(io) {
 
   connectButton.onclick = connectToServer;
 
+  const transferHostButton = $("transferHostButton");
+  const hostTransferStatus = $("hostTransferStatus");
+  const legacyAdmin = $("legacyAdmin"), adminKey = $("adminKey"), adminHint = $("adminHint"), adminContent = $("adminContent");
+  function closeAdmin() { legacyAdmin.hidden = true; adminKey.value = ""; }
+  $("adminButton").onclick = () => { legacyAdmin.hidden = false; adminKey.focus(); };
+  $("adminClose").onclick = closeAdmin;
+  legacyAdmin.onclick = event => { if (event.target === legacyAdmin) closeAdmin(); };
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !legacyAdmin.hidden) closeAdmin(); if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "a") { legacyAdmin.hidden = false; adminKey.focus(); } });
+  $("adminLogin").onclick = () => {
+    if (!socket?.connected) return adminHint.textContent = "Сначала подключись к серверу.";
+    socket.emit("admin-auth", adminKey.value, response => {
+      if (!response?.ok) return adminHint.textContent = response?.error || "Неверный ключ.";
+      adminHint.textContent = "Доступ администратора открыт."; adminContent.hidden = false;
+      socket.emit("admin-dashboard", data => { $("adminStats").textContent = `Сейчас в сети: ${data?.participants || 0}. Сообщений: ${data?.messages || 0}.`; });
+    });
+  };
+  $("adminClear").onclick = () => { socket?.emit("admin-clear-chat", response => { adminHint.textContent = response?.ok ? "Сообщения очищены." : (response?.error || "Не удалось очистить сообщения."); }); };
+  function hostKey() {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
+  }
+  transferHostButton.onclick = async () => {
+    if (!socket?.connected) {
+      hostTransferStatus.textContent = "Сначала подключись к общему серверу.";
+      return;
+    }
+    if (!window.friendsHost) {
+      hostTransferStatus.textContent = "Эта версия не умеет быть хостом. Установи обновление.";
+      return;
+    }
+    transferHostButton.disabled = true;
+    try {
+      hostTransferStatus.textContent = "Запускаю хост на этом компьютере…";
+      const key = hostKey();
+      const result = await window.friendsHost.start({ key });
+      if (!result?.ok) throw new Error(result?.error || "Не удалось запустить хост");
+      const destination = `http://${result.ip}:${result.port}`;
+      const accepted = await new Promise(resolve => socket.emit("host-transfer", { url: destination, key }, resolve));
+      if (!accepted?.ok) throw new Error(accepted?.error || "Сервер не принял передачу хоста");
+      hostTransferStatus.textContent = "Хост передан. Все участники подключаются автоматически…";
+    } catch (error) {
+      hostTransferStatus.textContent = "Не удалось передать хост: " + error.message;
+      transferHostButton.disabled = false;
+    }
+  };
+
   accessKeyInput.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       connectToServer();
@@ -885,6 +946,13 @@ async function startApp(io) {
   });
 
   function bindSocket(client) {
+    client.on("host-transfer", data => {
+      if (!data?.url || !data?.key) return;
+      serverAddress.value = data.url;
+      accessKeyInput.value = data.key;
+      hostTransferStatus.textContent = `Хост теперь у ${data.by || "участника"}. Подключаюсь автоматически…`;
+      connectToServer();
+    });
     client.on('session-info', info=>{
       uploadToken=info.uploadToken;
       if(Array.isArray(info.iceServers))rtcServers=info.iceServers;

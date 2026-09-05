@@ -1,6 +1,8 @@
 const { app, BrowserWindow, session, ipcMain, safeStorage, dialog, desktopCapturer } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { spawn } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 const page = pathToFileURL(path.join(__dirname, 'index.html')).href;
 function createWindow() {
@@ -15,6 +17,11 @@ function createWindow() {
 app.whenReady().then(() => {
   app.setAppUserModelId('com.friends.messenger');
   const savedFile = path.join(app.getPath('userData'), 'saved-access.bin');
+  let hostProcess = null;
+  function radminIp() {
+    for (const addresses of Object.values(os.networkInterfaces())) for (const item of addresses || []) if (item.family === 'IPv4' && !item.internal && /^26\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(item.address)) return item.address;
+    return null;
+  }
   function trusted(event) {
     if (event.senderFrame !== event.sender.mainFrame || event.senderFrame.url !== page) throw new Error('Access denied');
   }
@@ -42,7 +49,7 @@ app.whenReady().then(() => {
     trusted(event);
     if (typeof data?.server !== 'string' || typeof data?.key !== 'string' || data.key.length > 4096) throw new Error('Invalid settings');
     const url = new URL(data.server);
-    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost','127.0.0.1'].includes(url.hostname))) throw new Error('Invalid server');
+    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && (['localhost','127.0.0.1'].includes(url.hostname) || /^26\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(url.hostname)))) throw new Error('Invalid server');
     if (!safeStorage.isEncryptionAvailable()) throw new Error('Защищённое хранение недоступно.');
     const encrypted = safeStorage.encryptString(JSON.stringify({server:url.origin,key:data.key}));
     fs.writeFileSync(savedFile + '.tmp', encrypted);
@@ -51,6 +58,16 @@ app.whenReady().then(() => {
   ipcMain.handle('access:clear', event => {
     trusted(event);
     fs.rmSync(savedFile, {force:true});
+  });
+  ipcMain.handle('host:start', (event, data) => {
+    trusted(event);
+    if (typeof data?.key !== 'string' || data.key.length < 16) return {ok:false,error:'Неверный ключ хоста'};
+    const ip = radminIp();
+    if (!ip) return {ok:false,error:'Не найден Radmin VPN. Подключись к своей сети Radmin.'};
+    if (hostProcess && !hostProcess.killed) return {ok:true,ip,port:3000};
+    hostProcess = spawn(process.execPath, [path.join(__dirname, 'host-server.js')], { windowsHide:true, stdio:'ignore', env:{...process.env, ELECTRON_RUN_AS_NODE:'1', FRIENDS_HOST_KEY:data.key, FRIENDS_HOST_PORT:'3000'} });
+    hostProcess.on('exit', () => { hostProcess=null; });
+    return new Promise(resolve => setTimeout(() => resolve(hostProcess ? {ok:true,ip,port:3000} : {ok:false,error:'Порт 3000 занят другим приложением'}), 500));
   });
   ipcMain.handle('window:fullscreen', event => {
     trusted(event);
@@ -77,6 +94,7 @@ app.whenReady().then(() => {
       callback(screen ? {video: screen, audio: 'loopback'} : {});
     } catch { callback({}); }
   });
+  app.on('before-quit', () => { if(hostProcess && !hostProcess.killed) hostProcess.kill(); });
   createWindow();
 });
 app.on('window-all-closed', () => app.quit());

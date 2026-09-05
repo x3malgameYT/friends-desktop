@@ -1,7 +1,7 @@
 {
   "name": "friends-desktop",
   "productName": "Friends",
-  "version": "1.1.54",
+  "version": "1.1.55",
   "description": "Friends messenger",
   "author": "Friends",
   "private": true,
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "electron-updater": "6.8.9",
+    "socket.io": "^4.8.3",
     "socket.io-client": "4.8.3"
   },
   "devDependencies": {
@@ -26,7 +27,7 @@
       "preload.js",
       "index.html",
       "friends-v2.js",
-      "admin.js",
+      "host-server.js",
       "package.json",
       "icon.svg",
       "node_modules/**/*",

@@ -26,3 +26,6 @@ contextBridge.exposeInMainWorld('savedAccess', {
   save: data => ipcRenderer.invoke('access:save', data),
   clear: () => ipcRenderer.invoke('access:clear')
 });
+contextBridge.exposeInMainWorld('friendsHost', {
+  start: data => ipcRenderer.invoke('host:start', data)
+});
