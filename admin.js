@@ -3,7 +3,7 @@
   let adminToken = "";
   const el = (id) => document.getElementById(id);
   document.head.insertAdjacentHTML("beforeend", `<style>
-  #friends-admin{position:fixed;inset:0;z-index:20000;display:grid;place-items:center;background:#000b;font:14px "Segoe UI",sans-serif}
+  #friends-admin{position:fixed;inset:0;z-index:20000;display:grid;place-items:center;background:#000b;font:14px "Segoe UI",sans-serif}#friends-admin[hidden]{display:none}
   #friends-admin .box{width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;padding:22px;border-radius:10px;background:#313338;color:#f2f3f5;box-shadow:0 16px 50px #000}
   #friends-admin input{width:100%;height:40px;padding:0 10px;border:0;border-radius:5px;background:#1e1f22;color:#fff}
   #friends-admin button{margin:8px 6px 8px 0;padding:8px 11px;border:0;border-radius:5px;background:#5865f2;color:#fff;cursor:pointer}
