@@ -678,6 +678,7 @@ async function startApp(io) {
   let monitoring = false;
   let joining = false;
   let voiceSession = 0;
+  let rejoinVoiceAfterReconnect = false;
 
   const peers = new Map();
   const pendingIce = new Map();
@@ -967,6 +968,11 @@ async function startApp(io) {
     client.on("connect", () => {
       connectionLabel.textContent = "В сети";
       setStatus("Подключено к серверу");
+      if (rejoinVoiceAfterReconnect) {
+        rejoinVoiceAfterReconnect = false;
+        voiceStatus.textContent = "Связь восстановлена. Возвращаю в голосовой канал…";
+        setTimeout(() => joinVoice(), 250);
+      }
       if (rememberCode.checked && window.savedAccess) {
         window.savedAccess.save({server:serverUrl,key:accessKey})
           .then(() => { rememberStatus.textContent = 'Код сохранён на этом компьютере'; })
@@ -991,6 +997,7 @@ async function startApp(io) {
     });
 
     client.on("disconnect", () => {
+      rejoinVoiceAfterReconnect = Boolean(localStream);
       uploadToken='';participants.clear();drawMembers();
       leaveVoice();
       connectionLabel.textContent = "Не подключено";
