@@ -1,7 +1,7 @@
 {
   "name": "friends-desktop",
   "productName": "Friends",
-  "version": "1.1.52",
+  "version": "1.1.53",
   "description": "Friends messenger",
   "author": "Friends",
   "private": true,
@@ -26,6 +26,7 @@
       "preload.js",
       "index.html",
       "friends-v2.js",
+      "admin.js",
       "package.json",
       "icon.svg",
       "node_modules/**/*",
